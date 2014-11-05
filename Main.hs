@@ -27,7 +27,7 @@ import Pipes.ByteString (fromLazy)
 import Data.Csv ((.:), FromNamedRecord(..), Record)
 import Control.Monad.IO.Class (MonadIO)
 import Pipes
-
+import qualified Pipes.Prelude as P
 
 -- "igarary01",2010,"NYN",34
 type BaseballStats = (BL.ByteString, Int, BL.ByteString, Int)
@@ -58,7 +58,7 @@ battingData = decode NoHeader
 battingSource :: Monad m => IO (Producer BS.ByteString m ())
 battingSource = fmap fromLazy (BL.readFile "batting.csv")
 
--- main :: IO (Proxy x' x () BS.ByteString IO ())
+main :: IO ()
 main = do
   src <- battingSource
   runEffect $ for (battingData src) (lift . print)
