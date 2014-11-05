@@ -2,17 +2,31 @@
 module Main where
 
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as BS
 import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import Data.Conduit.List as CL
 import Data.Text (Text)
 import Control.Monad.IO.Class (liftIO)
 
+-- cassava
 -- import Data.Csv
+
+-- cassava streaming
 -- import Data.Csv.Streaming
-import Data.Conduit
-import Data.Conduit.Binary
-import Data.CSV.Conduit
+
+-- csv-conduit
+-- import Data.Conduit
+-- import Data.Conduit.Binary
+-- import Data.CSV.Conduit
+
+-- pipes-csv
+import Data.Csv (HasHeader(..))
+import Pipes.Csv (decode, decodeByName)
+import Pipes.ByteString (fromLazy)
+import Data.Csv ((.:), FromNamedRecord(..), Record)
+import Control.Monad.IO.Class (MonadIO)
+import Pipes
 
 
 -- "igarary01",2010,"NYN",34
@@ -34,13 +48,29 @@ type BaseballStats = (BL.ByteString, Int, BL.ByteString, Int)
 --   putStrLn $ "Total atBats was: " ++ (show summed)
 --   where summer = \(name, year :: Int, team, atBats :: Int) sum -> sum + atBats
 
+-- pipes-csv
 
+battingData :: Monad m =>
+               Producer BS.ByteString m ()
+               -> Producer (Either String BaseballStats) m ()
+battingData = decode NoHeader
+
+battingSource :: Monad m => IO (Producer BS.ByteString m ())
+battingSource = fmap fromLazy (BL.readFile "batting.csv")
+
+-- main :: IO (Proxy x' x () BS.ByteString IO ())
+main = do
+  src <- battingSource
+  runEffect $ for (battingData src) (lift . print)
+
+-- tombstoned csv-conduit
+-- instance BL.ByteString BaseballStats where  
 -- myProcessor :: Monad m => (Int -> BaseballStats -> Int) -> Int -> ConduitM a o m b
-myProcessor :: Monad m => Sink BaseballStats m Int
+-- myProcessor :: Monad m => Sink BaseballStats m Int
 -- myProcessor = CL.fold summer 0
 --   where summer = (\sum (name, year :: Int, team, atBats :: Int) -> sum + atBats)
-myProcessor = CL.fold (\acc x -> fourth x + acc) 0
-  where fourth (_, _, _, x) = x
+-- myProcessor = CL.fold (\acc x -> fourth x + acc) 0
+--   where fourth (_, _, _, x) = x
 
 -- main :: IO ()
-main = runResourceT $ sourceFile "batting.csv" $= intoCSV defCSVSettings $$ myProcessor
+-- main = runResourceT $ sourceFile "batting.csv" $= intoCSV defCSVSettings $$ myProcessor
