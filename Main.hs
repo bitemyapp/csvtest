@@ -7,7 +7,7 @@ import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import Data.Conduit.List as CL
 import Data.Text (Text)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 -- cassava
 -- import Data.Csv
@@ -21,13 +21,12 @@ import Control.Monad.IO.Class (liftIO)
 -- import Data.CSV.Conduit
 
 -- pipes-csv
-import Data.Csv (HasHeader(..))
+import Data.Csv (HasHeader(..), (.:), FromNamedRecord(..), Record)
 import Pipes.Csv (decode, decodeByName)
 import Pipes.ByteString (fromLazy)
-import Data.Csv ((.:), FromNamedRecord(..), Record)
-import Control.Monad.IO.Class (MonadIO)
 import Pipes
 import qualified Pipes.Prelude as P
+import Data.Either (isRight)
 
 -- "igarary01",2010,"NYN",34
 type BaseballStats = (BL.ByteString, Int, BL.ByteString, Int)
@@ -58,9 +57,19 @@ battingData = decode NoHeader
 battingSource :: Monad m => IO (Producer BS.ByteString m ())
 battingSource = fmap fromLazy (BL.readFile "batting.csv")
 
+-- sumAtBats :: Pipe (Either String BaseballStats) (Either String Int)
+sumAtBats :: Monad m =>
+             Producer (t0, Int, t1, Int) m ()
+             -> m Int
+sumAtBats = P.fold summer 0 id
+  where summer n (_, _, _, atBats :: Int) = n + atBats
+
 main :: IO ()
 main = do
-  src <- battingSource
+  src <- battingSource :: IO (Producer BS.ByteString IO ())
+  --  >-> (lift . print)
+  -- (P.filter isRight)
+  let blah = sumAtBats (battingData src)
   runEffect $ for (battingData src) (lift . print)
 
 -- tombstoned csv-conduit
