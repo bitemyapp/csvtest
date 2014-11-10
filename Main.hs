@@ -71,7 +71,7 @@ main = do
   --  >-> (lift . print)
   -- (P.filter isRight)
   -- let blah = sumAtBats (P.map fmap (battingData src))
-  (P.sum $ (battingData src) >-> P.map foldE) >>= print
+  P.sum $ battingData src >-> P.map foldE >>= print
   -- >-> P.fold (fmap (\n x -> n + x)) 0 id
   -- runEffect $ for (battingData src) (lift . print)
   return ()
