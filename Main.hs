@@ -26,7 +26,8 @@ import Pipes.Csv (decode, decodeByName)
 import Pipes.ByteString (fromLazy)
 import Pipes
 import qualified Pipes.Prelude as P
-import Data.Either (isRight)
+import Data.Either (isRight, either)
+import Control.Monad (forever)
 
 -- "igarary01",2010,"NYN",34
 type BaseballStats = (BL.ByteString, Int, BL.ByteString, Int)
@@ -57,20 +58,23 @@ battingData = decode NoHeader
 battingSource :: Monad m => IO (Producer BS.ByteString m ())
 battingSource = fmap fromLazy (BL.readFile "batting.csv")
 
--- sumAtBats :: Pipe (Either String BaseballStats) (Either String Int)
-sumAtBats :: Monad m =>
-             Producer (t0, Int, t1, Int) m ()
-             -> m Int
-sumAtBats = P.fold summer 0 id
-  where summer n (_, _, _, atBats :: Int) = n + atBats
+-- dropLeft = forever $ await >>= (\x -> case x of
+--                                    Left _  -> return ()
+--                                    Right x -> yield x)
+
+foldE :: Either String BaseballStats -> Int
+foldE = either (const 0) (\(_, _, _, i) -> i)
 
 main :: IO ()
 main = do
   src <- battingSource :: IO (Producer BS.ByteString IO ())
   --  >-> (lift . print)
   -- (P.filter isRight)
-  let blah = sumAtBats (battingData src)
-  runEffect $ for (battingData src) (lift . print)
+  -- let blah = sumAtBats (P.map fmap (battingData src))
+  (P.sum $ (battingData src) >-> P.map foldE) >>= print
+  -- >-> P.fold (fmap (\n x -> n + x)) 0 id
+  -- runEffect $ for (battingData src) (lift . print)
+  return ()
 
 -- tombstoned csv-conduit
 -- instance BL.ByteString BaseballStats where  
