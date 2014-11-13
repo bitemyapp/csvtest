@@ -20,6 +20,7 @@ import Data.Conduit
 import Data.Conduit.Binary
 import qualified Data.Conduit.List as CL
 import Data.CSV.Conduit
+import Data.CSV.Conduit.Conversion (parseRecord, runParser)
 
 -- pipes-csv
 -- import Data.Csv (HasHeader(..), (.:), FromNamedRecord(..), Record)
@@ -95,17 +96,16 @@ main = do
 -- myProcessor = CL.fold summer 0
 --   where summer = (\sum (name, year :: Int, team, atBats :: Int) -> sum + atBats)
 
-processor :: Monad m => Sink (Row Text) m Int
+processor :: Monad m => Sink BaseballStats m Int
 processor = CL.fold f 0
   where
-    f acc (_:_:_:x:_) = toi x + acc
-    toi x = case T.decimal x of
-              Right (s,_) -> s
-              Left _ -> 0
+    f acc = (+) acc . fourth
 
 csvConduitTest :: IO ()
 csvConduitTest = runResourceT conduit >>= print
   where
     conduit = sourceFile "batting.csv"
            $= intoCSV defCSVSettings
+          =$= CL.mapMaybe parse
            $$ processor
+    parse = either (const Nothing) Just . runParser . parseRecord
