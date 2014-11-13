@@ -4,8 +4,9 @@ import qualified Data.ByteString.Lazy as BL
 -- import qualified Data.ByteString as BS
 -- import qualified Data.Vector as V
 import qualified Data.Foldable as F
--- import Data.Conduit.List as CL
--- import Data.Text (Text)
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Read as T
 -- import Control.Monad.IO.Class (MonadIO, liftIO)
 
 -- cassava
@@ -15,9 +16,11 @@ import qualified Data.Foldable as F
 import Data.Csv.Streaming
 
 -- csv-conduit
--- import Data.Conduit
--- import Data.Conduit.Binary
--- import Data.CSV.Conduit
+import Data.Conduit
+import Data.Conduit.Binary
+import qualified Data.Conduit.List as CL
+import Data.CSV.Conduit
+import Data.CSV.Conduit.Conversion (parseRecord, runParser)
 
 -- pipes-csv
 -- import Data.Csv (HasHeader(..), (.:), FromNamedRecord(..), Record)
@@ -92,8 +95,17 @@ main = do
 -- myProcessor :: Monad m => Sink BaseballStats m Int
 -- myProcessor = CL.fold summer 0
 --   where summer = (\sum (name, year :: Int, team, atBats :: Int) -> sum + atBats)
--- myProcessor = CL.fold (\acc x -> fourth x + acc) 0
---   where fourth (_, _, _, x) = x
 
--- main :: IO ()
--- main = runResourceT $ sourceFile "batting.csv" $= intoCSV defCSVSettings $$ myProcessor
+processor :: Monad m => Sink BaseballStats m Int
+processor = CL.fold f 0
+  where
+    f acc = (+) acc . fourth
+
+csvConduitTest :: IO ()
+csvConduitTest = runResourceT conduit >>= print
+  where
+    conduit = sourceFile "batting.csv"
+           $= intoCSV defCSVSettings
+          =$= CL.mapMaybe parse
+           $$ processor
+    parse = either (const Nothing) Just . runParser . parseRecord
