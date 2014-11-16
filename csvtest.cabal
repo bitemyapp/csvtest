@@ -5,8 +5,8 @@ name:                csvtest
 version:             0.1.0.0
 -- synopsis:            
 -- description:         
--- license:             
-license-file:        LICENSE
+license:             BSD3
+-- license-file:        BSD3
 author:              Chris Allen
 maintainer:          cma@bitemyapp.com
 -- copyright:           
@@ -15,9 +15,9 @@ build-type:          Simple
 -- extra-source-files:  
 cabal-version:       >=1.10
 
-executable csvtest
-  main-is:             Main.hs
-  ghc-options:         -rtsopts -O2
+library
+  ghc-options:         -Wall
+  exposed-modules:     Csvtest
   build-depends:       base >=4.7 && <4.8,
                        bytestring,
                        vector,
@@ -31,5 +31,35 @@ executable csvtest
                        csv-conduit,
                        conduit-extra,
                        cassava
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+
+executable csvtest
+  main-is:             Main.hs
+  ghc-options:         -rtsopts -O2
+  build-depends:       base,
+                       csvtest,
+                       bytestring,
+                       vector,
+                       text,
+                       transformers,
+                       pipes,
+                       pipes-bytestring,
+                       pipes-safe,
+                       pipes-csv,
+                       conduit,
+                       csv-conduit,
+                       conduit-extra,
+                       cassava
   hs-source-dirs:      .
+  default-language:    Haskell2010
+
+test-suite tests
+  ghc-options:         -Wall
+  type:                exitcode-stdio-1.0
+  main-is:             Tests.hs
+  hs-source-dirs:      tests
+  build-depends:       base,
+                       csvtest,
+                       hspec >= 2.0 && < 2.1
   default-language:    Haskell2010
